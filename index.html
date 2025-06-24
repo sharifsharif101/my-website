@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>حساب المكافأة</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 500px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 30px;
+      color: #333;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      text-align: right;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #555;
+      font-size: 14px;
+    }
+
+    input[type="date"], input[type="number"] {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e1e5e9;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s ease;
+      box-sizing: border-box;
+    }
+
+    input[type="date"]:focus, input[type="number"]:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .button {
+      margin-top: 25px;
+      padding: 15px 30px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: bold;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      width: 100%;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .result {
+      margin-top: 25px;
+      padding: 20px;
+      border-radius: 10px;
+      font-size: 16px;
+      line-height: 1.6;
+      text-align: right;
+      white-space: pre-line;
+    }
+
+    .result.success {
+      background: linear-gradient(135deg, #fe4fd8 0%, #161e1e 100%);
+      color: white;
+      box-shadow: 0 8px 25px rgba(79, 172, 254, 0.3);
+    }
+
+    .result.error {
+      background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+      color: #d63384;
+      box-shadow: 0 8px 25px rgba(255, 154, 158, 0.3);
+    }
+
+    .calculation-details {
+      background: rgba(255,255,255,0.2);
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+
+    .info-box {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #6c757d;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>حساب مكافأة نهاية الخدمة</h1>
+    
+    <div class="info-box">
+      <strong>طريقة الحساب:</strong><br>
+      • الخمس سنوات الأولى: 21 يوم راتب لكل سنة<br>
+      • ما بعد الخمس سنوات: شهر راتب كامل لكل سنة<br>
+      • يتم حساب المدة من التاريخ الوسيط إلى تاريخ النهاية
+    </div>
+
+    <form id="bonusForm">
+      <div class="form-group">
+        <label for="startDate">تاريخ بداية الخدمة:</label>
+        <input type="date" id="startDate" required>
+      </div>
+
+      <div class="form-group">
+        <label for="endDate">تاريخ نهاية الخدمة:</label>
+        <input type="date" id="endDate" required>
+      </div>
+
+      <div class="form-group">
+        <label for="middleDate">التاريخ المرجعي للحساب:</label>
+        <input type="date" id="middleDate" required>
+      </div>
+
+      <div class="form-group">
+        <label for="salary">الراتب الشهري (ريال):</label>
+        <input type="number" id="salary" placeholder="مثال: 10000" min="1" required>
+      </div>
+
+      <button type="submit" class="button">حساب المكافأة</button>
+    </form>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <script>
+    document.getElementById('bonusForm').addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      // الحصول على القيم من النموذج
+      const startDate = new Date(document.getElementById('startDate').value);
+      const endDate = new Date(document.getElementById('endDate').value);
+      const middleDate = new Date(document.getElementById('middleDate').value);
+      const salary = parseFloat(document.getElementById('salary').value);
+
+      // التحقق من صحة الإدخالات الأساسية
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || isNaN(middleDate.getTime()) || isNaN(salary) || salary <= 0) {
+        showResult('يرجى إدخال تواريخ صالحة وراتب صحيح.', 'error');
+        return;
+      }
+
+      // التحقق من منطقية التواريخ
+      if (endDate <= startDate) {
+        showResult('تاريخ نهاية الخدمة يجب أن يكون بعد تاريخ بداية الخدمة.', 'error');
+        return;
+      }
+
+      if (middleDate > endDate) {
+        showResult('التاريخ المرجعي يجب أن يكون قبل أو يساوي تاريخ نهاية الخدمة.', 'error');
+        return;
+      }
+
+      // حساب تاريخ انتهاء الخمس سنوات الأولى
+      const fiveYearsAfterStart = new Date(startDate);
+      fiveYearsAfterStart.setFullYear(startDate.getFullYear() + 5);
+
+      // حساب المكافأة
+      calculateBonus(startDate, endDate, middleDate, fiveYearsAfterStart, salary);
+    });
+
+    function calculateBonus(startDate, endDate, middleDate, fiveYearsAfterStart, salary) {
+      let result = '';
+      let totalBonus = 0;
+
+      // التحقق من موقع التاريخ المرجعي
+      if (middleDate < startDate) {
+        // الحالة الأولى: التاريخ المرجعي قبل بداية الخدمة
+        result = 'التاريخ المرجعي قبل بداية الخدمة.\nلا يمكن حساب مكافأة لفترة غير موجودة.';
+        showResult(result, 'error');
+        return;
+      }
+
+      // حساب المدة من التاريخ المرجعي إلى نهاية الخدمة
+      const servicePeriod = calculateServicePeriod(middleDate, endDate);
+      
+      if (servicePeriod.totalDays <= 0) {
+        result = 'لا توجد فترة خدمة للحساب.\nالتاريخ المرجعي يساوي تاريخ النهاية.';
+        showResult(result, 'error');
+        return;
+      }
+
+      result += `فترة الخدمة المحسوبة: ${servicePeriod.years} سنة و ${servicePeriod.months} شهر و ${servicePeriod.days} يوم\n`;
+      result += `إجمالي الأيام: ${servicePeriod.totalDays} يوم\n\n`;
+
+      if (middleDate < fiveYearsAfterStart && endDate <= fiveYearsAfterStart) {
+        // الحالة الثانية: الفترة كاملة ضمن الخمس سنوات الأولى
+        const yearsInService = servicePeriod.totalDays / 365.25;
+        totalBonus = (salary / 30) * 21 * yearsInService;
+        
+        result += `الفترة كاملة ضمن الخمس سنوات الأولى:\n`;
+        result += `المعادلة: (${salary} ÷ 30) × 21 × ${yearsInService.toFixed(2)}\n`;
+        result += `المكافأة = ${totalBonus.toFixed(2)} ريال`;
+        
+      } else if (middleDate >= fiveYearsAfterStart) {
+        // الحالة الثالثة: الفترة كاملة بعد الخمس سنوات الأولى
+        const yearsInService = servicePeriod.totalDays / 365.25;
+        totalBonus = salary * yearsInService;
+        
+        result += `الفترة كاملة بعد الخمس سنوات الأولى:\n`;
+        result += `المعادلة: ${salary} × ${yearsInService.toFixed(2)}\n`;
+        result += `المكافأة = ${totalBonus.toFixed(2)} ريال`;
+        
+      } else {
+        // الحالة الرابعة: الفترة تمتد عبر نهاية الخمس سنوات
+        
+        // حساب الجزء الأول: من التاريخ المرجعي إلى نهاية الخمس سنوات
+        const firstPeriod = calculateServicePeriod(middleDate, fiveYearsAfterStart);
+        const yearsFirstPeriod = firstPeriod.totalDays / 365.25;
+        const bonusFirstPeriod = (salary / 30) * 21 * yearsFirstPeriod;
+        
+        // حساب الجزء الثاني: من نهاية الخمس سنوات إلى النهاية
+        const secondPeriod = calculateServicePeriod(fiveYearsAfterStart, endDate);
+        const yearsSecondPeriod = secondPeriod.totalDays / 365.25;
+        const bonusSecondPeriod = salary * yearsSecondPeriod;
+        
+        totalBonus = bonusFirstPeriod + bonusSecondPeriod;
+        
+        result += `الفترة تمتد عبر نهاية الخمس سنوات:\n\n`;
+        result += `الجزء الأول (ضمن الخمس سنوات):\n`;
+        result += `${firstPeriod.years} سنة و ${firstPeriod.months} شهر و ${firstPeriod.days} يوم (${yearsFirstPeriod.toFixed(2)} سنة)\n`;
+        result += `المعادلة: (${salary} ÷ 30) × 21 × ${yearsFirstPeriod.toFixed(2)} = ${bonusFirstPeriod.toFixed(2)} ريال\n\n`;
+        
+        result += `الجزء الثاني (بعد الخمس سنوات):\n`;
+        result += `${secondPeriod.years} سنة و ${secondPeriod.months} شهر و ${secondPeriod.days} يوم (${yearsSecondPeriod.toFixed(2)} سنة)\n`;
+        result += `المعادلة: ${salary} × ${yearsSecondPeriod.toFixed(2)} = ${bonusSecondPeriod.toFixed(2)} ريال\n\n`;
+        result += `إجمالي المكافأة: ${bonusFirstPeriod.toFixed(2)} + ${bonusSecondPeriod.toFixed(2)} = ${totalBonus.toFixed(2)} ريال`;
+      }
+
+      showResult(result, 'success');
+    }
+
+    function calculateServicePeriod(fromDate, toDate) {
+      let years = 0;
+      let months = 0;
+      let days = 0;
+      
+      // حساب الفرق الإجمالي بالأيام
+      const timeDiff = toDate.getTime() - fromDate.getTime();
+      const totalDays = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      
+      // حساب السنوات والشهور والأيام
+      let tempDate = new Date(fromDate);
+      
+      // حساب السنوات
+      while (tempDate.getFullYear() < toDate.getFullYear() || 
+             (tempDate.getFullYear() === toDate.getFullYear() && 
+              tempDate.getMonth() < toDate.getMonth()) ||
+             (tempDate.getFullYear() === toDate.getFullYear() && 
+              tempDate.getMonth() === toDate.getMonth() && 
+              tempDate.getDate() <= toDate.getDate())) {
+        
+        const nextYear = new Date(tempDate);
+        nextYear.setFullYear(tempDate.getFullYear() + 1);
+        
+        if (nextYear <= toDate) {
+          years++;
+          tempDate = nextYear;
+        } else {
+          break;
+        }
+      }
+      
+      // حساب الشهور
+      while (tempDate.getMonth() < toDate.getMonth() || 
+             (tempDate.getMonth() === toDate.getMonth() && tempDate.getDate() <= toDate.getDate())) {
+        
+        const nextMonth = new Date(tempDate);
+        nextMonth.setMonth(tempDate.getMonth() + 1);
+        
+        if (nextMonth <= toDate) {
+          months++;
+          tempDate = nextMonth;
+        } else {
+          break;
+        }
+      }
+      
+      // حساب الأيام المتبقية
+      if (tempDate < toDate) {
+        days = Math.floor((toDate.getTime() - tempDate.getTime()) / (1000 * 60 * 60 * 24));
+      }
+      
+      return {
+        years: years,
+        months: months,
+        days: days,
+        totalDays: totalDays
+      };
+    }
+
+    function showResult(message, type) {
+      const resultDiv = document.getElementById('result');
+      resultDiv.textContent = message;
+      resultDiv.className = `result ${type}`;
+    }
+  </script>
+</body>
+</html>
