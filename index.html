@@ -46,7 +46,7 @@
       font-size: 14px;
     }
 
-    input[type="date"], input[type="number"] {
+    input[type="text"], input[type="number"] {
       width: 100%;
       padding: 12px;
       border: 2px solid #e1e5e9;
@@ -56,7 +56,7 @@
       box-sizing: border-box;
     }
 
-    input[type="date"]:focus, input[type="number"]:focus {
+    input[type="text"]:focus, input[type="number"]:focus {
       outline: none;
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -92,7 +92,7 @@
     }
 
     .result.success {
-      background: linear-gradient(135deg, #fe4fd8 0%, #161e1e 100%);
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
       color: white;
       box-shadow: 0 8px 25px rgba(79, 172, 254, 0.3);
     }
@@ -131,23 +131,24 @@
       <strong>طريقة الحساب:</strong><br>
       • الخمس سنوات الأولى: 21 يوم راتب لكل سنة<br>
       • ما بعد الخمس سنوات: شهر راتب كامل لكل سنة<br>
-      • يتم حساب المدة من التاريخ الوسيط إلى تاريخ النهاية
+      • يتم حساب المدة من التاريخ الوسيط إلى تاريخ النهاية<br><br>
+      <strong>تنسيق التاريخ:</strong> يوم/شهر/سنة أو يوم-شهر-سنة (مثال: 15/01/2020)
     </div>
 
     <form id="bonusForm">
       <div class="form-group">
         <label for="startDate">تاريخ بداية الخدمة:</label>
-        <input type="date" id="startDate" required>
+        <input type="text" id="startDate" placeholder="مثال: 15/01/2020 أو 15-01-2020" required>
       </div>
 
       <div class="form-group">
         <label for="endDate">تاريخ نهاية الخدمة:</label>
-        <input type="date" id="endDate" required>
+        <input type="text" id="endDate" placeholder="مثال: 15/01/2025 أو 15-01-2025" required>
       </div>
 
       <div class="form-group">
         <label for="middleDate">التاريخ المرجعي للحساب:</label>
-        <input type="date" id="middleDate" required>
+        <input type="text" id="middleDate" placeholder="مثال: 15/01/2023 أو 15-01-2023" required>
       </div>
 
       <div class="form-group">
@@ -166,14 +167,19 @@
       event.preventDefault();
 
       // الحصول على القيم من النموذج
-      const startDate = new Date(document.getElementById('startDate').value);
-      const endDate = new Date(document.getElementById('endDate').value);
-      const middleDate = new Date(document.getElementById('middleDate').value);
+      const startDateStr = document.getElementById('startDate').value.trim();
+      const endDateStr = document.getElementById('endDate').value.trim();
+      const middleDateStr = document.getElementById('middleDate').value.trim();
       const salary = parseFloat(document.getElementById('salary').value);
 
+      // تحويل التواريخ المكتوبة إلى كائنات تاريخ
+      const startDate = parseDate(startDateStr);
+      const endDate = parseDate(endDateStr);
+      const middleDate = parseDate(middleDateStr);
+
       // التحقق من صحة الإدخالات الأساسية
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || isNaN(middleDate.getTime()) || isNaN(salary) || salary <= 0) {
-        showResult('يرجى إدخال تواريخ صالحة وراتب صحيح.', 'error');
+      if (!startDate || !endDate || !middleDate || isNaN(salary) || salary <= 0) {
+        showResult('يرجى إدخال تواريخ صالحة وراتب صحيح.\nتنسيق التاريخ: يوم/شهر/سنة (مثال: 15/01/2020)', 'error');
         return;
       }
 
@@ -324,6 +330,55 @@
         days: days,
         totalDays: totalDays
       };
+    }
+
+    function parseDate(dateStr) {
+      // إزالة المسافات الإضافية
+      dateStr = dateStr.replace(/\s+/g, '');
+      
+      // التحقق من التنسيقات المختلفة
+      let day, month, year;
+      
+      // تنسيق يوم/شهر/سنة أو يوم-شهر-سنة
+      if (dateStr.includes('/')) {
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          day = parseInt(parts[0]);
+          month = parseInt(parts[1]) - 1; // JavaScript months are 0-indexed
+          year = parseInt(parts[2]);
+        }
+      } else if (dateStr.includes('-')) {
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+          day = parseInt(parts[0]);
+          month = parseInt(parts[1]) - 1; // JavaScript months are 0-indexed
+          year = parseInt(parts[2]);
+        }
+      }
+      
+      // التحقق من صحة القيم
+      if (isNaN(day) || isNaN(month) || isNaN(year) || 
+          day < 1 || day > 31 || 
+          month < 0 || month > 11 || 
+          year < 1900 || year > 2100) {
+        return null;
+      }
+      
+      const date = new Date(year, month, day);
+      
+      // التحقق من أن التاريخ صالح (للتعامل مع تواريخ مثل 31/02)
+      if (date.getDate() !== day || date.getMonth() !== month || date.getFullYear() !== year) {
+        return null;
+      }
+      
+      return date;
+    }
+
+    function formatDate(date) {
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
     }
 
     function showResult(message, type) {
